@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import britishImage from '../assets/cats/british.png'
 import orangeImage from '../assets/cats/orange.png'
 import lihuaImage from '../assets/cats/lihua.png'
@@ -36,8 +36,8 @@ const cats: Cat[] = [
   { name: '豹豹', breed: '孟加拉', note: '跑酷选手已上线', image: bengalImage, tint: '#ffe394' },
 ]
 
-function sampleCats(): Cat[] {
-  const shuffled = [...cats]
+function sampleCats(excludedNames: ReadonlySet<string> = new Set()): Cat[] {
+  const shuffled = cats.filter((cat) => !excludedNames.has(cat.name))
 
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
     const randomIndex = Math.floor(Math.random() * (index + 1))
@@ -49,24 +49,28 @@ function sampleCats(): Cat[] {
 
 const firstBatch = sampleCats()
 const visibleCats = ref<Cat[]>(firstBatch)
-const selectedCat = ref(firstBatch[0]?.name ?? cats[0].name)
+const selectedCat = ref<string | null>(null)
+const isShuffling = ref(false)
+let shuffleTimer: number | undefined
 
 function shuffleCats(): void {
-  const currentSignature = visibleCats.value.map((cat) => cat.name).sort().join(',')
-  let nextBatch = sampleCats()
-  let attempts = 0
+  if (isShuffling.value) return
 
-  while (
-    nextBatch.map((cat) => cat.name).sort().join(',') === currentSignature &&
-    attempts < 4
-  ) {
-    nextBatch = sampleCats()
-    attempts += 1
-  }
+  isShuffling.value = true
+  const currentNames = new Set(visibleCats.value.map((cat) => cat.name))
+  const nextBatch = sampleCats(currentNames)
 
   visibleCats.value = nextBatch
-  selectedCat.value = nextBatch[0]?.name ?? cats[0].name
+  selectedCat.value = null
+  shuffleTimer = window.setTimeout(() => {
+    isShuffling.value = false
+    shuffleTimer = undefined
+  }, 680)
 }
+
+onBeforeUnmount(() => {
+  if (shuffleTimer !== undefined) window.clearTimeout(shuffleTimer)
+})
 </script>
 
 <template>
@@ -74,19 +78,26 @@ function shuffleCats(): void {
     <div class="section-label">MEET THE CATS · 12 FRIENDS</div>
     <div class="section-heading">
       <h2 id="cat-title">这次谁来营业？</h2>
-      <button class="shuffle-button" type="button" @click="shuffleCats">
+      <button
+        class="shuffle-button"
+        :class="{ 'is-shuffling': isShuffling }"
+        type="button"
+        :disabled="isShuffling"
+        :aria-busy="isShuffling"
+        @click="shuffleCats"
+      >
         <span>↻</span> 换一批
       </button>
     </div>
     <p class="section-copy">每次随机遇见四位猫猫朋友，点一下就能送出摸摸。</p>
 
-    <div class="cat-grid">
+    <TransitionGroup name="cat-shuffle" tag="div" class="cat-grid" aria-live="polite">
       <button
-        v-for="cat in visibleCats"
+        v-for="(cat, index) in visibleCats"
         :key="cat.name"
         class="cat-card"
         :class="{ selected: selectedCat === cat.name }"
-        :style="{ '--tint': cat.tint }"
+        :style="{ '--tint': cat.tint, '--index': index }"
         type="button"
         :aria-label="`摸摸${cat.name}，${cat.breed}`"
         @click="selectedCat = cat.name"
@@ -101,9 +112,12 @@ function shuffleCats(): void {
           <small>{{ cat.note }}</small>
         </span>
       </button>
-    </div>
+    </TransitionGroup>
 
-    <p class="pet-result"><span>♥</span> {{ selectedCat }} 收到了一次摸摸！</p>
+    <p class="pet-result" aria-live="polite">
+      <template v-if="selectedCat"><span>♥</span> {{ selectedCat }} 收到了一次摸摸！</template>
+      <template v-else><span>♡</span> 选一只猫猫，送出摸摸吧！</template>
+    </p>
   </section>
 </template>
 
@@ -152,6 +166,7 @@ function shuffleCats(): void {
       font-size: 11px;
       font-weight: 900;
       cursor: pointer;
+      transition: color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
 
       span {
         font-size: 15px;
@@ -160,6 +175,20 @@ function shuffleCats(): void {
       &:active {
         box-shadow: 0 2px 0 #efd4d5;
         transform: translateY(2px);
+      }
+
+      &.is-shuffling {
+        color: #b16f7d;
+        background: #fff5f5;
+        cursor: wait;
+
+        span {
+          animation: shuffle-spin 620ms cubic-bezier(0.32, 0.72, 0.28, 1);
+        }
+      }
+
+      &:disabled {
+        opacity: 0.82;
       }
     }
   }
@@ -173,10 +202,32 @@ function shuffleCats(): void {
   }
 
   .cat-grid {
+    position: relative;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
     align-items: start;
+  }
+
+  .cat-shuffle-enter-active {
+    animation: cat-card-arrive 520ms cubic-bezier(0.2, 0.86, 0.25, 1.2) backwards;
+    animation-delay: calc(var(--index) * 55ms);
+  }
+
+  .cat-shuffle-leave-active {
+    position: absolute;
+    width: calc((100% - 14px) / 2);
+    transition: opacity 220ms ease, transform 220ms ease, filter 220ms ease;
+  }
+
+  .cat-shuffle-leave-to {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(-16px) rotate(-3deg) scale(0.82);
+  }
+
+  .cat-shuffle-move {
+    transition: transform 430ms cubic-bezier(0.22, 0.8, 0.25, 1);
   }
 
   .cat-card {
@@ -331,6 +382,30 @@ function shuffleCats(): void {
 @keyframes cat-bounce {
   0%, 100% { transform: translateY(0) rotate(0); }
   45% { transform: translateY(-7px) rotate(-2deg); }
+}
+
+@keyframes shuffle-spin {
+  0% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(200deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes cat-card-arrive {
+  0% {
+    opacity: 0;
+    filter: blur(3px);
+    transform: translateY(20px) rotate(3deg) scale(0.76);
+  }
+  65% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(-5px) rotate(-1deg) scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) rotate(0) scale(1);
+  }
 }
 
 @media (max-width: 360px) {

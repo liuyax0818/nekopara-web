@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+SC:wght@500;700;900&family=ZCOOL+KuaiLe&display=swap');
+
+:root {
+  --font-cute: 'ZCOOL KuaiLe', 'Microsoft YaHei', sans-serif;
+  --font-round: 'Baloo 2', 'Noto Sans SC', 'PingFang SC', sans-serif;
+  --ink: #513942;
+  --pink: #ec7086;
+  --cream: #fff9ef;
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--ink);
+  background: #e9ddd6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #e9ddd6;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button,
+a {
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 3px solid rgba(236, 112, 134, 0.42);
+    outline-offset: 3px;
+  }
+}
+
+button {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

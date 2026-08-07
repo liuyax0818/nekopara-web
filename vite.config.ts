@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-const staticWorker = () => ({
+const staticWorker = (): Plugin => ({
   name: 'static-worker-entry',
   apply: 'build',
   generateBundle() {

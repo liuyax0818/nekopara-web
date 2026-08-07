@@ -91,6 +91,11 @@ onBeforeUnmount(() => {
     </div>
     <p class="section-copy">每次随机遇见四位猫猫朋友，点一下就能送出摸摸。</p>
 
+    <p class="pet-result" aria-live="polite">
+      <template v-if="selectedCat"><span>♥</span> {{ selectedCat }} 收到了一次摸摸！</template>
+      <template v-else><span>♡</span> 选一只猫猫，送出摸摸吧！</template>
+    </p>
+
     <TransitionGroup name="cat-shuffle" tag="div" class="cat-grid" aria-live="polite">
       <button
         v-for="(cat, index) in visibleCats"
@@ -114,10 +119,6 @@ onBeforeUnmount(() => {
       </button>
     </TransitionGroup>
 
-    <p class="pet-result" aria-live="polite">
-      <template v-if="selectedCat"><span>♥</span> {{ selectedCat }} 收到了一次摸摸！</template>
-      <template v-else><span>♡</span> 选一只猫猫，送出摸摸吧！</template>
-    </p>
   </section>
 </template>
 
@@ -358,7 +359,7 @@ onBeforeUnmount(() => {
   .pet-result {
     width: max-content;
     max-width: 100%;
-    margin: 26px auto 0;
+    margin: 0 auto 26px;
     padding: 10px 14px;
     border: 1px dashed #dfb9c0;
     border-radius: 14px;

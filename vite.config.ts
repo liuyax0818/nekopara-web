@@ -1,26 +1,37 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-const staticWorker = (): Plugin => ({
-  name: 'static-worker-entry',
-  apply: 'build',
-  generateBundle() {
-    this.emitFile({
-      type: 'asset',
-      fileName: 'server/index.js',
-      source: `export default {
-  async fetch(request, env) {
-    const response = await env.ASSETS.fetch(request)
-    if (response.status !== 404 || request.method !== 'GET') return response
-
-    const fallbackUrl = new URL('/index.html', request.url)
-    return env.ASSETS.fetch(new Request(fallbackUrl, request))
-  },
-}\n`,
-    })
-  },
-})
-
 export default defineConfig({
-  plugins: [vue(), staticWorker()],
+  plugins: [vue()],
+  server: {
+    host: '0.0.0.0',
+  },
+  build: {
+    target: 'es2015',
+    chunkSizeWarningLimit: 4000,
+    rolldownOptions: {
+      output: {
+        chunkFileNames: 'static/js/[name]-[hash].js',
+        entryFileNames: 'static/js/[name]-[hash].js',
+        assetFileNames: 'static/[ext]/[name]-[hash].[ext]',
+        codeSplitting: {
+          groups: [
+            {
+              // 本地依赖拆包
+              name: 'shared',
+              test: /[\\/]packages[\\/]shared[\\/]/,
+              priority: 10,
+            },
+            {
+              // 第三方依赖拆包
+              name: 'vendor',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+
+    }
+  }
 })
